@@ -281,9 +281,10 @@ know the expected cluster identity.
 
 ## Signing and Key Distribution
 
-Vault's transit engine provides asymmetric signing. The signing key name is derived from
-`{signing_key_prefix}-{participant_context_claim}`, defaulting to `signing-jwtlet_pc`. A
-single key is shared across all participant contexts.
+Vault's transit engine provides asymmetric signing. The signing key is a single transit key
+shared across all participant contexts, configured explicitly via `vault.key_name`. The
+requested participant context is carried in the token's `sub` claim and in the claim named by
+`token.participant_context_claim`.
 
 **JWKS endpoint.** `GET /.well-known/jwks.json` returns the Vault-backed public key in
 JWK Set format. The endpoint is unauthenticated (standard for JWKS per RFC 7517).

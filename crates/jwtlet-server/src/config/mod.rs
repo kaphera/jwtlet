@@ -99,6 +99,8 @@ pub struct PostgresPoolConfig {
 pub struct VaultConfig {
     /// Vault server URL, e.g. `https://vault.example.com:8200`.
     pub url: Option<String>,
+    /// Name of the Vault transit key used to sign issued tokens and served via JWKS.
+    pub key_name: Option<String>,
     /// Direct Vault token (development only — written to a temp file at startup).
     pub token: Option<String>,
     /// Path to the file containing the Vault service-account token (production).
@@ -109,6 +111,7 @@ impl Default for VaultConfig {
     fn default() -> Self {
         Self {
             url: None,
+            key_name: None,
             token: None,
             token_file: None,
         }
@@ -157,7 +160,8 @@ pub struct TokenConfig {
     pub client_audience: Option<String>,
     /// The audience placed in issued participant-context tokens.
     pub audience: Option<String>,
-    /// Claim name used to identify the participant context. Defaults to `"jwtlet_pc"`.
+    /// Name of the claim in issued tokens that carries the requested participant context,
+    /// alongside `sub`. Defaults to `"jwtlet_pc"`.
     #[serde(default = "default_participant_context_claim")]
     pub participant_context_claim: String,
     /// Lifetime of issued tokens in seconds. Defaults to 3600.
@@ -241,6 +245,13 @@ impl JwtletConfig {
             None => errors.push("vault.url is required".to_string()),
             Some(url) if url.parse::<reqwest::Url>().is_err() => {
                 errors.push(format!("vault.url is not a valid URL: '{url}'"));
+            }
+            _ => {}
+        }
+        match &self.vault.key_name {
+            None => errors.push("vault.key_name is required".to_string()),
+            Some(key_name) if key_name.is_empty() => {
+                errors.push("vault.key_name cannot be empty".to_string());
             }
             _ => {}
         }

@@ -22,6 +22,11 @@ use serde_json::json;
 use std::collections::HashSet;
 use thiserror::Error;
 
+/// Participant context passed to the generator when signing. jwtlet signs all issued tokens
+/// with a single service-wide transit key, so the signing context is a fixed synthetic one;
+/// it never appears in the token itself.
+const SIGNING_PARTICIPANT_CONTEXT: &str = "jwtlet";
+
 #[derive(Builder)]
 pub struct TokenExchangeService {
     #[builder(into)]
@@ -30,8 +35,10 @@ pub struct TokenExchangeService {
     audience: String,
     #[builder(into)]
     issuer: String,
+    /// Name of the claim in issued tokens that carries the requested participant context,
+    /// alongside `sub`. Defaults to `"jwtlet_pc"`.
     #[builder(into, default = "jwtlet_pc")]
-    jwtlet_participant_context: String,
+    participant_context_claim: String,
     #[builder(default = 3600)]
     token_ttl_secs: i64,
     verifier: Box<dyn JwtVerifier>,
@@ -79,6 +86,7 @@ impl TokenExchangeService {
                 "iss": client_claims.iss,
             }),
         );
+        custom.insert(self.participant_context_claim.clone(), json!(participant_context));
 
         let now = Utc::now().timestamp();
         let participant_claims = TokenClaims::builder()
@@ -91,10 +99,11 @@ impl TokenExchangeService {
             .custom(custom)
             .build();
 
-        let jwtlet_pc = &ParticipantContext::builder()
-            .id(self.jwtlet_participant_context.clone())
-            .build();
-        let token = self.generator.generate_token(jwtlet_pc, participant_claims).await?;
+        let signing_context = &ParticipantContext::builder().id(SIGNING_PARTICIPANT_CONTEXT).build();
+        let token = self
+            .generator
+            .generate_token(signing_context, participant_claims)
+            .await?;
         Ok(token)
     }
 }

@@ -39,6 +39,7 @@ fn valid_config() -> JwtletConfig {
         },
         vault: VaultConfig {
             url: Some("https://vault.example.com:8200".to_string()),
+            key_name: Some("signing-jwtlet_pc".to_string()),
             token: Some("root".to_string()),
             token_file: None,
         },
@@ -66,6 +67,7 @@ fn default_config_has_expected_values() {
     assert_eq!(cfg.token.participant_context_claim, DEFAULT_PARTICIPANT_CONTEXT_CLAIM);
     assert_eq!(cfg.token.token_ttl_secs, DEFAULT_TOKEN_TTL_SECS);
     assert!(cfg.vault.url.is_none());
+    assert!(cfg.vault.key_name.is_none());
     assert!(cfg.vault.token.is_none());
     assert!(cfg.vault.token_file.is_none());
 }
@@ -109,6 +111,20 @@ fn validate_fails_when_vault_url_invalid() {
     let mut cfg = valid_config();
     cfg.vault.url = Some("not-a-url".to_string());
     assert_error_contains(&cfg, "vault.url is not a valid URL");
+}
+
+#[test]
+fn validate_fails_when_vault_key_name_missing() {
+    let mut cfg = valid_config();
+    cfg.vault.key_name = None;
+    assert_error_contains(&cfg, "vault.key_name is required");
+}
+
+#[test]
+fn validate_fails_when_vault_key_name_empty() {
+    let mut cfg = valid_config();
+    cfg.vault.key_name = Some(String::new());
+    assert_error_contains(&cfg, "vault.key_name cannot be empty");
 }
 
 #[test]

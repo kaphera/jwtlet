@@ -14,8 +14,7 @@ use crate::config::{JwtletConfig, K8sConfig, PostgresPoolConfig, StorageBackend,
 use crate::meta::AuthorizationServerMetadata;
 use dsdk_facet_core::context::ParticipantContext;
 use dsdk_facet_core::jwt::{
-    JwkSetProvider, JwtGenerator, JwtVerifier, PrefixTransitKeyResolver, VaultJwtGenerator,
-    VaultVerificationKeyResolver,
+    JwkSetProvider, JwtGenerator, JwtVerifier, VaultJwtGenerator, VaultVerificationKeyResolver,
 };
 use dsdk_facet_core::vault::VaultSigningClient;
 use dsdk_facet_hashicorp_vault::{HashicorpVaultClient, HashicorpVaultConfig, VaultAuthConfig};
@@ -32,13 +31,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::warn;
-// ============================================================================
-// Constants
-// ============================================================================
 
-/// Prefix for the Vault transit key used to sign issued tokens.
-/// The full key name per participant context is `{prefix}-{pc.id}`.
-pub const DEFAULT_SIGNING_KEY_PREFIX: &str = "signing";
+mod resolver;
+
+use resolver::StaticTransitKeyResolver;
 
 // ============================================================================
 // Runtime
@@ -199,15 +195,14 @@ fn parse_ssl_mode(mode: &str) -> Result<PgSslMode, JwtletError> {
 }
 
 async fn assemble(config: &JwtletConfig, store: Arc<dyn ResourceStore>) -> Result<JwtletRuntime, JwtletError> {
-    // The signing key in Vault is named "{prefix}-{participant_context_claim}" — matching
-    // how VaultJwtGenerator derives the key and how configure-vault.sh provisions it.
-    let signing_key_name = format!(
-        "{}-{}",
-        DEFAULT_SIGNING_KEY_PREFIX, config.token.participant_context_claim
-    );
+    let signing_key_name = config
+        .vault
+        .key_name
+        .clone()
+        .ok_or_else(|| JwtletError::Configuration("vault.key_name is required".to_string()))?;
     let vault_client = create_vault_client(&config.vault, &signing_key_name).await?;
     let key_resolver = create_key_resolver(vault_client.clone()).await?;
-    let jwt_generator = create_jwt_generator(vault_client, DEFAULT_SIGNING_KEY_PREFIX);
+    let jwt_generator = create_jwt_generator(vault_client, &signing_key_name);
 
     let exchange_resource_service = build_resource_service(store.clone());
     let management_resource_service = Arc::new(build_resource_service(store));
@@ -232,7 +227,7 @@ async fn assemble(config: &JwtletConfig, store: Arc<dyn ResourceStore>) -> Resul
             .client_audience(client_audience.clone())
             .audience(audience)
             .issuer(issuer.clone())
-            .jwtlet_participant_context(config.token.participant_context_claim.clone())
+            .participant_context_claim(config.token.participant_context_claim.clone())
             .token_ttl_secs(config.token.token_ttl_secs)
             .verifier(Box::new(create_k8s_verifier(&config.k8s).await?))
             .resource_service(exchange_resource_service)
@@ -308,11 +303,11 @@ async fn create_key_resolver(
     Ok(Arc::new(resolver))
 }
 
-fn create_jwt_generator(vault_client: Arc<dyn VaultSigningClient>, prefix: &str) -> Box<dyn JwtGenerator> {
+fn create_jwt_generator(vault_client: Arc<dyn VaultSigningClient>, key_name: &str) -> Box<dyn JwtGenerator> {
     Box::new(
         VaultJwtGenerator::builder()
             .signing_client(vault_client)
-            .key_resolver(Arc::new(PrefixTransitKeyResolver::builder().prefix(prefix).build()))
+            .key_resolver(Arc::new(StaticTransitKeyResolver::new(key_name)))
             .build(),
     )
 }
