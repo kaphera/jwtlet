@@ -92,6 +92,7 @@ token_ttl_secs = 3600         # default
 # Vault signing backend
 [vault]
 url = "http://vault:8200"           # required
+key_name = "signing-jwtlet_pc"      # required – transit key used to sign issued tokens and served via JWKS
 token_file = "/vault/secrets/.vault-token" # use token_file in production
 # token    = "s.xxxxx"                     # or a literal token for development
 

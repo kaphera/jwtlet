@@ -1620,7 +1620,7 @@ dependencies = [
 [[package]]
 name = "dsdk-facet-core"
 version = "0.1.0"
-source = "git+https://github.com/kaphera/dsdk-facet-rs?rev=100f15f4463a895c1c96902e6f471676fdcd9720#100f15f4463a895c1c96902e6f471676fdcd9720"
+source = "git+https://github.com/kaphera/dsdk-facet-rs?rev=30c53eea6d7d2c6f02a3c6a1667500dda5d01f90#30c53eea6d7d2c6f02a3c6a1667500dda5d01f90"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -1689,7 +1689,7 @@ dependencies = [
 [[package]]
 name = "dsdk-facet-hashicorp-vault"
 version = "0.1.0"
-source = "git+https://github.com/kaphera/dsdk-facet-rs?rev=100f15f4463a895c1c96902e6f471676fdcd9720#100f15f4463a895c1c96902e6f471676fdcd9720"
+source = "git+https://github.com/kaphera/dsdk-facet-rs?rev=30c53eea6d7d2c6f02a3c6a1667500dda5d01f90#30c53eea6d7d2c6f02a3c6a1667500dda5d01f90"
 dependencies = [
  "async-trait",
  "base64 0.23.1",

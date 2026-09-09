@@ -53,12 +53,13 @@ tokio-test = "0.4"
 tracing-test = "0.2"
 
 # Carry kaphera's fork of the facet crates until the parent-dir watch fix
-# lands upstream (eclipse-dataplane-core/dsdk-facet-rs#102). Core must be
+# lands upstream (eclipse-dataplane-core/dsdk-facet-rs#102) and the
+# `FixedTransitKeyResolver` is published in a release. Core must be
 # patched alongside vault: the fork's vault depends on its sibling core via
 # a path dep, and patching only vault would yield two core instances.
 [patch.crates-io]
-dsdk-facet-core = { git = "https://github.com/kaphera/dsdk-facet-rs", rev = "100f15f4463a895c1c96902e6f471676fdcd9720" }
-dsdk-facet-hashicorp-vault = { git = "https://github.com/kaphera/dsdk-facet-rs", rev = "100f15f4463a895c1c96902e6f471676fdcd9720" }
+dsdk-facet-core = { git = "https://github.com/kaphera/dsdk-facet-rs", rev = "30c53eea6d7d2c6f02a3c6a1667500dda5d01f90" }
+dsdk-facet-hashicorp-vault = { git = "https://github.com/kaphera/dsdk-facet-rs", rev = "30c53eea6d7d2c6f02a3c6a1667500dda5d01f90" }
 
 [workspace.lints.clippy]
 unwrap_used = "deny"

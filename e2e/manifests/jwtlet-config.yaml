@@ -24,6 +24,7 @@ data:
 
     [vault]
     url        = "http://vault:8200"
+    key_name   = "signing-jwtlet_pc"
     token_file = "/vault/secrets/.vault-token"
 
     [service_accounts]

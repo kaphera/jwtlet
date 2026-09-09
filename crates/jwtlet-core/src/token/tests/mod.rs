@@ -99,6 +99,50 @@ async fn exchange_token_sets_participant_context_as_sub_and_configured_audience(
 }
 
 #[tokio::test]
+async fn exchange_token_writes_participant_context_under_default_claim() {
+    let sink = Arc::new(Mutex::new(None));
+    make_service(
+        ok_verifier(),
+        capturing_generator(Arc::clone(&sink)),
+        mapping_store(mapping(&["read"])),
+    )
+    .exchange_token(PARTICIPANT_CONTEXT, vec!["read".to_string()], "input-token", None)
+    .await
+    .unwrap();
+
+    let claims = sink.lock().unwrap().take().unwrap();
+    assert_eq!(claims.custom["jwtlet_pc"].as_str().unwrap(), PARTICIPANT_CONTEXT);
+    assert_eq!(claims.sub, PARTICIPANT_CONTEXT);
+}
+
+#[tokio::test]
+async fn exchange_token_writes_participant_context_under_configured_claim() {
+    let sink = Arc::new(Mutex::new(None));
+    let service = TokenExchangeService::builder()
+        .client_audience(CLIENT_AUDIENCE)
+        .audience(TOKEN_AUDIENCE)
+        .issuer(JWTLET_ISSUER)
+        .participant_context_claim("pc")
+        .verifier(Box::new(ok_verifier()))
+        .generator(Box::new(capturing_generator(Arc::clone(&sink))))
+        .resource_service(
+            ResourceService::builder()
+                .store(Arc::new(mapping_store(mapping(&["read"]))) as Arc<dyn ResourceStore>)
+                .build(),
+        )
+        .build();
+
+    service
+        .exchange_token(PARTICIPANT_CONTEXT, vec!["read".to_string()], "input-token", None)
+        .await
+        .unwrap();
+
+    let claims = sink.lock().unwrap().take().unwrap();
+    assert_eq!(claims.custom["pc"].as_str().unwrap(), PARTICIPANT_CONTEXT);
+    assert_eq!(claims.sub, PARTICIPANT_CONTEXT);
+}
+
+#[tokio::test]
 async fn exchange_token_includes_actor_claim_with_client_sub_and_iss() {
     let sink = Arc::new(Mutex::new(None));
     make_service(
