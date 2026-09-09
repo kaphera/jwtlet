@@ -14,7 +14,7 @@ use crate::config::{JwtletConfig, K8sConfig, PostgresPoolConfig, StorageBackend,
 use crate::meta::AuthorizationServerMetadata;
 use dsdk_facet_core::context::ParticipantContext;
 use dsdk_facet_core::jwt::{
-    JwkSetProvider, JwtGenerator, JwtVerifier, VaultJwtGenerator, VaultVerificationKeyResolver,
+    FixedTransitKeyResolver, JwkSetProvider, JwtGenerator, JwtVerifier, VaultJwtGenerator, VaultVerificationKeyResolver,
 };
 use dsdk_facet_core::vault::VaultSigningClient;
 use dsdk_facet_hashicorp_vault::{HashicorpVaultClient, HashicorpVaultConfig, VaultAuthConfig};
@@ -31,10 +31,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::warn;
-
-mod resolver;
-
-use resolver::StaticTransitKeyResolver;
 
 // ============================================================================
 // Runtime
@@ -307,7 +303,7 @@ fn create_jwt_generator(vault_client: Arc<dyn VaultSigningClient>, key_name: &st
     Box::new(
         VaultJwtGenerator::builder()
             .signing_client(vault_client)
-            .key_resolver(Arc::new(StaticTransitKeyResolver::new(key_name)))
+            .key_resolver(Arc::new(FixedTransitKeyResolver::builder().key_name(key_name).build()))
             .build(),
     )
 }
